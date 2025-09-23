@@ -2,11 +2,19 @@ const { Client, GatewayIntentBits } = require('discord.js');
 const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
 require('dotenv').config();
 
-// ボットのトークンを.envファイルから取得 
 const token = process.env.TOKEN;
 
-// リストを保存する配列
-let myList = [];
+// fs module
+const fs = require("fs");
+const DATA_FILE = "iiwake.json";
+
+// 言い訳データの読み込み
+let iiwakeData = {};
+try {
+  iiwakeData = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+} catch (e) {
+  iiwakeData = {};
+}
 
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}`);
@@ -18,29 +26,47 @@ client.on('messageCreate', message => {
   const args = message.content.trim().split(' ');
   const command = args[0].toLowerCase();
 
-  // !add コマンド
+  // !add ユーザー名 言い訳
   if (command === '!add') {
-    const item = args.slice(1).join(' ');
-    if (!item) {
-      return message.reply('追加する内容を入力してね！');
+    if (args.length < 3) {
+      return message.reply('使い方: !add ユーザー名 言い訳');
     }
-    myList.push(item);
-    message.reply(`「${item}」を言い訳に追加したよ！`);
+    const user = args[1];
+    const excuse = args.slice(2).join(' ');
+
+    if (!iiwakeData[user]) {
+      iiwakeData[user] = [];
+    }
+    iiwakeData[user].push(excuse);
+
+    // 保存
+    fs.writeFileSync(DATA_FILE, JSON.stringify(iiwakeData, null, 2), "utf-8");
+    message.reply(`「${excuse}」を${user}の言い訳に追加`);
   }
 
-  // !list コマンド
+  // !list ユーザー名
   if (command === '!list') {
-    if (myList.length === 0) {
-      return message.reply('言い訳が空です！');
+    if (args.length < 2) {
+      return message.reply('使い方: !list ユーザー名');
     }
-    const listMessage = myList.map((item, index) => `${index + 1}. ${item}`).join('\n');
-    message.reply(`📋 言い訳一覧:\n${listMessage}`);
+    const user = args[1];
+    const excuses = iiwakeData[user] || [];
+    if (excuses.length === 0) {
+      return message.reply(`${user}の言い訳が空です！`);
+    }
+    const listMessage = excuses.map((item, index) => `${index + 1}. ${item}`).join('\n');
+    message.reply(`${user}の言い訳集↓↓:\n${listMessage}`);
   }
 
-  // !clear コマンド
+  // !clear ユーザー名
   if (command === '!clear') {
-    myList = [];
-    message.reply('言い訳を空にしたよ！');
+    if (args.length < 2) {
+      return message.reply('使い方: !clear ユーザー名');
+    }
+    const user = args[1];
+    iiwakeData[user] = [];
+    fs.writeFileSync(DATA_FILE, JSON.stringify(iiwakeData, null, 2), "utf-8");
+    message.reply(`${user}の言い訳を空にしたよ！`);
   }
 });
 
