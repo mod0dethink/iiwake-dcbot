@@ -51,19 +51,20 @@ client.on('messageCreate', async message => {
 
   // !add @ユーザー 言い訳
   if (command === '!add') {
-    if (!userId || args.length < 3) {
-      return message.reply('使い方: !add @ユーザー 言い訳');
+    if (!userMention || !userIdMatch) {
+      return message.reply('使い方: !add @ユーザー 言い訳\n※「@ユーザー」は必ず青く光るメンションで指定してください。');
     }
-    const excuse = args.slice(2).join(' ');
-
-    // ユーザー情報取得（存在しない場合はエラー処理）
     let member;
     try {
       member = await message.guild.members.fetch(userId);
     } catch (err) {
       return message.reply('そのユーザーはサーバーに存在しません。');
     }
+    if (args.length < 3) {
+      return message.reply('使い方: !add @ユーザー 言い訳');
+    }
     const displayName = member.nickname || member.user.username;
+    const excuse = args.slice(2).join(' ');
 
     if (!iiwakeData.users[userId]) {
       iiwakeData.users[userId] = { name: displayName, excuses: [] };
@@ -72,35 +73,48 @@ client.on('messageCreate', async message => {
     iiwakeData.users[userId].excuses.push(excuse);
 
     fs.writeFileSync(DATA_FILE, JSON.stringify(iiwakeData, null, 2), "utf-8");
-    message.reply(`「${excuse}」を${displayName}の言い訳に追加`);
+    return message.reply(`「${excuse}」を${displayName}の言い訳に追加`);
   }
 
   // !list @ユーザー
   if (command === '!list') {
-    if (!userId) {
-      return message.reply('使い方: !list @ユーザー');
+    if (!userMention || !userIdMatch) {
+      return message.reply('使い方: !list @ユーザー\n※「@ユーザー」は必ず青く光るメンションで指定してください。');
+    }
+    let member;
+    try {
+      member = await message.guild.members.fetch(userId);
+    } catch (err) {
+      return message.reply('そのユーザーはサーバーに存在しません。');
     }
     const user = iiwakeData.users[userId];
     if (!user || user.excuses.length === 0) {
       return message.reply(`${user ? user.name : userMention}の言い訳が空です！`);
     }
     const listMessage = user.excuses.map((item, index) => `${index + 1}. ${item}`).join('\n');
-    message.reply(`${user.name}の言い訳集↓↓:\n${listMessage}`);
+    return message.reply(`${user.name}の言い訳集↓↓:\n${listMessage}`);
   }
 
   // !clear @ユーザー
   if (command === '!clear') {
-    if (!userId) {
-      return message.reply('使い方: !clear @ユーザー');
+    if (!userMention || !userIdMatch) {
+      return message.reply('使い方: !clear @ユーザー\n※「@ユーザー」は必ず青く光るメンションで指定してください。');
+    }
+    let member;
+    try {
+      member = await message.guild.members.fetch(userId);
+    } catch (err) {
+      return message.reply('そのユーザーはサーバーに存在しません。');
     }
     if (iiwakeData.users[userId]) {
       iiwakeData.users[userId].excuses = [];
       fs.writeFileSync(DATA_FILE, JSON.stringify(iiwakeData, null, 2), "utf-8");
-      message.reply(`${iiwakeData.users[userId].name}の言い訳を空にしたよ！`);
+      return message.reply(`${iiwakeData.users[userId].name}の言い訳を空にしたよ！`);
     } else {
-      message.reply('そのユーザーの言い訳はまだありません');
+      return message.reply('そのユーザーの言い訳はまだありません');
     }
   }
 });
 
+// Botのログイン
 client.login(token);
