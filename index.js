@@ -56,8 +56,13 @@ client.on('messageCreate', async message => {
     }
     const excuse = args.slice(2).join(' ');
 
-    // ユーザー情報取得
-    const member = await message.guild.members.fetch(userId);
+    // ユーザー情報取得（存在しない場合はエラー処理）
+    let member;
+    try {
+      member = await message.guild.members.fetch(userId);
+    } catch (err) {
+      return message.reply('そのユーザーはサーバーに存在しません。');
+    }
     const displayName = member.nickname || member.user.username;
 
     if (!iiwakeData.users[userId]) {
