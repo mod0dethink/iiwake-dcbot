@@ -1,4 +1,14 @@
 const { Client, GatewayIntentBits } = require('discord.js');
+const express = require('express');
+const app = express();
+
+// Renderのスリープ防止用エンドポイント設定
+app.get("/",(req,res) => {
+  res.send("Bot is alive!");
+})
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT,()=> console.log("server running"));
 
 // discord clientの初期化
 const client = new Client({
