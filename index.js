@@ -4,6 +4,8 @@ const app = express();
 
 // Renderのスリープ防止用エンドポイント設定
 app.get("/",(req,res) => {
+  const now = new Date().toLocaleString();
+  console.log(`Access: [${now}] IP: ${req.ip}`);
   res.send("Bot is alive!");
 })
 
