@@ -8,6 +8,7 @@ app.get("/",(req,res) => {
   console.log(`Access: [${now}] IP: ${req.ip}`);
   res.send("Bot is alive!");
 })
+app.set('trust proxy', true);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT,()=> console.log("server running"));
