@@ -1,14 +1,13 @@
 const { Client, GatewayIntentBits } = require('discord.js');
 const express = require('express');
 const app = express();
+app.set('trust proxy', true);
 
 // Renderのスリープ防止用エンドポイント設定
-app.get("/",(req,res) => {
-  const now = new Date().toLocaleString();
-  console.log(`Access: [${now}] IP: ${req.ip}`);
+app.get("/", (req, res) => {
+  console.log(`[ACCESS] ${new Date().toISOString()} - ${req.method} from ${req.ip} (UA: ${req.get("User-Agent")})`);
   res.send("Bot is alive!");
-})
-app.set('trust proxy', true);
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT,()=> console.log("server running"));
