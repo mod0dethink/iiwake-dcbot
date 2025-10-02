@@ -40,6 +40,8 @@ try {
 
 // commandを定義
 const commands = {
+
+  // !add 指定されたユーザーの言い訳を追加
   add: async (message, args, { member, userId }) => {
     const displayName = member.nickname || member.user.username;
     const excuse = args.slice(2).join(" ");
@@ -58,6 +60,7 @@ const commands = {
     return message.reply(`「${excuse}」を${displayName}の言い訳に追加`);
   },
 
+  // !list 指定されたユーザーの言い訳一覧を表示
   list: async (message, args, { member, userId }) => {
     const user = iiwakeData.users[userId];
     if (!user || user.excuses.length === 0) {
@@ -67,11 +70,17 @@ const commands = {
     return message.reply(`${user.name}の言い訳集↓↓:\n${listMessage}`);
   },
 
-  // 追加予定:引数で指定されたインデックスの言い訳を削除
+  // !clear 引数で指定されたインデックスの言い訳を削除
   clear: async (message, args, { member, userId }) => {
     const user = iiwakeData.users[userId];
     if (!user) {
       return message.reply("そのユーザーの言い訳はまだありません");
+    }
+    // !clear @user all で全削除
+    if(args[2] == "all"){
+      user.excuses = [];
+      fs.writeFileSync(DATA_FILE, JSON.stringify(iiwakeData, null, 2), "utf-8");
+      return message.reply(`${user.name}の言い訳を空にしたよ！`);
     }
     // インデックス指定あり
     if (args.length >= 3) {
@@ -82,11 +91,9 @@ const commands = {
       const removed = user.excuses.splice(idx - 1, 1);
       fs.writeFileSync(DATA_FILE, JSON.stringify(iiwakeData, null, 2), "utf-8");
       return message.reply(`${user.name}の言い訳「${removed[0]}」を削除しました`);
-    } else {
-      // インデックス指定なし→全削除
-      user.excuses = [];
-      fs.writeFileSync(DATA_FILE, JSON.stringify(iiwakeData, null, 2), "utf-8");
-      return message.reply(`${user.name}の言い訳を空にしたよ！`);
+    }else{
+      // インデックス指定なし
+      return message.reply("インデックスを指定してください。例: !clear @ユーザー 2");
     }
   }
 };
@@ -106,8 +113,9 @@ client.on('clientReady', async () => {
 
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
-
+  // Discordのメッセージを取得して空白区切りで配列に格納している
   const args = message.content.trim().split(/\s+/);
+  // コマンド名を小文字化して先頭の!を削除
   const command = args[0].toLowerCase().replace("!", "");
 
   if (!commands[command]) return; // 未対応コマンドなら無視
