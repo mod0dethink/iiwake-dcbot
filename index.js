@@ -30,7 +30,7 @@ const token = process.env.TOKEN;
 const fs = require("fs");
 const DATA_FILE = "iiwake.json";
 
-// 言い訳データの読み込み
+// jsonをオブジェクトに変換
 let iiwakeData = {};
 try {
   iiwakeData = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
@@ -67,13 +67,26 @@ const commands = {
     return message.reply(`${user.name}の言い訳集↓↓:\n${listMessage}`);
   },
 
+  // 追加予定:引数で指定されたインデックスの言い訳を削除
   clear: async (message, args, { member, userId }) => {
-    if (iiwakeData.users[userId]) {
-      iiwakeData.users[userId].excuses = [];
-      fs.writeFileSync(DATA_FILE, JSON.stringify(iiwakeData, null, 2), "utf-8");
-      return message.reply(`${iiwakeData.users[userId].name}の言い訳を空にしたよ！`);
-    } else {
+    const user = iiwakeData.users[userId];
+    if (!user) {
       return message.reply("そのユーザーの言い訳はまだありません");
+    }
+    // インデックス指定あり
+    if (args.length >= 3) {
+      const idx = parseInt(args[2], 10); // 10進数でパース
+      if (isNaN(idx) || idx < 1 || idx > user.excuses.length) {
+        return message.reply(`インデックスは1～${user.excuses.length}の数字で指定してください`);
+      }
+      const removed = user.excuses.splice(idx - 1, 1);
+      fs.writeFileSync(DATA_FILE, JSON.stringify(iiwakeData, null, 2), "utf-8");
+      return message.reply(`${user.name}の言い訳「${removed[0]}」を削除しました`);
+    } else {
+      // インデックス指定なし→全削除
+      user.excuses = [];
+      fs.writeFileSync(DATA_FILE, JSON.stringify(iiwakeData, null, 2), "utf-8");
+      return message.reply(`${user.name}の言い訳を空にしたよ！`);
     }
   }
 };
@@ -105,7 +118,7 @@ client.on("messageCreate", async (message) => {
   const userId = userIdMatch ? userIdMatch[1] : null;
 
   if (!userId) {
-    return message.reply(`使い方: !${command} @ユーザー ...`);
+    return message.reply(`使い方: !${command} @ユーザー ...(メンション形式で指定)`);
   }
 
   let member;
